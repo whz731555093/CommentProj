@@ -15,18 +15,22 @@ public class MvcConfig implements WebMvcConfigurer {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    /**
+     * @description 注册拦截器
+     * @param registry
+     */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 登录拦截器
+        // 注册拦截器
         registry.addInterceptor(new LoginInterceptor())
                 .excludePathPatterns(
-                        "/shop/**",
-                        "/voucher/**",
-                        "/shop-type/**",
-                        "/upload/**",
-                        "/blog/hot",
-                        "/user/code",
-                        "/user/login"
+                        "/shop/**", // 查询店铺信息
+                        "/voucher/**",  // 查询优惠券信息
+                        "/shop-type/**",    // 查询店铺类型
+                        "/upload/**",   // 上传数据 理论上要拦截
+                        "/blog/hot",    // 查询热点数据
+                        "/user/code",   // 验证码url
+                        "/user/login"   // 登录url
                 ).order(1);
         // token刷新的拦截器
         registry.addInterceptor(new RefreshTokenInterceptor(stringRedisTemplate)).addPathPatterns("/**").order(0);
