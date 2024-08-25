@@ -7,17 +7,17 @@
 nginx-1.18.0为前端工程<br>
 sky-take-out为后端工程
 
+#### 所需环境
 
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1.  JDK17 
+2.  MySQL 
+3.  Redis
 
 #### 使用说明
 
-1.  双击nginx.exe或cmd start nginx即可启动前端工程<br>
-2.  运行启动类即可启动后端工程
+1.  运行hmdp.sql的SQL语句，建所需的表
+2.  双击nginx.exe或cmd start nginx即可启动前端工程<br>
+3.  运行启动类即可启动后端工程
 
 #### 参与贡献
 
