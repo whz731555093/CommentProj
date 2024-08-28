@@ -64,16 +64,19 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     }
 
     @Override
-    @Transactional
+    @Transactional  // 统一回滚，单体系统可使用
     public Result update(Shop shop) {
         Long id = shop.getId();
         if (id == null) {
             return Result.fail("店铺id不能为空");
         }
+
         // 1.更新数据库
         updateById(shop);
+
         // 2.删除缓存
         stringRedisTemplate.delete(CACHE_SHOP_KEY + id);
+
         return Result.ok();
     }
 

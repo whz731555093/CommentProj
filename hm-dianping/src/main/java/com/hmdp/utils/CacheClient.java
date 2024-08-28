@@ -60,15 +60,19 @@ public class CacheClient {
 
         // 4.不存在，根据id查询数据库
         R r = dbFallback.apply(id);
+
         // 5.不存在，返回错误
         if (r == null) {
-            // 将空值写入redis
+            // 将空值写入Redis
             stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+
             // 返回错误信息
             return null;
         }
+
         // 6.存在，写入redis
         this.set(key, r, time, unit);
+
         return r;
     }
 
