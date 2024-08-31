@@ -66,7 +66,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     }
 
     private class VoucherOrderHandler implements Runnable {
-
         @Override
         public void run() {
             while (true) {
@@ -237,7 +236,15 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         // 3.返回订单id
         return Result.ok(orderId);
     }*/
-    /*@Override
+
+    /**
+     * @description 下单优惠券
+     * @param voucherId 优惠券ID
+     * @return 订单ID
+     */
+    /*
+    @Override
+    @Transactional
     public Result seckillVoucher(Long voucherId) {
         // 1.查询优惠券
         SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
@@ -257,10 +264,31 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail("库存不足！");
         }
 
-        return createVoucherOrder(voucherId);
+        // 5.扣减库存
+        boolean success = seckillVoucherService.update()
+            .setSql("stock = stock - 1")    // 等价于 set stock = stock - 1
+            .eq("voucher_id", voucher_id)   // 等价于 where id = ?
+            .gt("stock", 0).update();  // 乐观锁 等价于 where stock > 0
+        if (!success) {
+            return Result.fail("库存不足！");
+        }
+
+        // 6.创建订单
+        VoucherOrder voucherOrder = new VoucherOrder();
+        // 6.1 订单id
+        Long orderId = redisIdWorker.nextId("order");
+        voucherOrder.setId(orderId);
+        // 6.2 用户id
+        Long userId = UserHolder.getUser().getId();
+        voucherOrder.setUserId(userId);
+        // 6.3 代金券id
+        voucherOrder.setVoucherId(voucherId);
+        // 6.4 插入订单数据
+        save(voucherOrder);
+
+        // 7 返回订单id
+        return Result.ok(orderId);
     }
-
-
 
     @Transactional
     public Result createVoucherOrder(Long voucherId) {
@@ -315,6 +343,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
 
     }*/
+
     /*@Transactional
     public Result createVoucherOrder(Long voucherId) {
         // 5.一人一单

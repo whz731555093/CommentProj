@@ -75,19 +75,19 @@ public class Voucher implements Serializable {
     /**
      * 库存
      */
-    @TableField(exist = false)
+    @TableField(exist = false)  // 仅用于计算，不在数据库中存储
     private Integer stock;
 
     /**
      * 生效时间
      */
-    @TableField(exist = false)
+    @TableField(exist = false)  // 仅用于计算，不在数据库中存储
     private LocalDateTime beginTime;
 
     /**
      * 失效时间
      */
-    @TableField(exist = false)
+    @TableField(exist = false)  // 仅用于计算，不在数据库中存储
     private LocalDateTime endTime;
 
     /**
