@@ -31,7 +31,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * @description 前置拦截，从Redis中获取数据
+     * @description 前置拦截，从Redis中获取数据 作用是当用户访问网页时，就会刷新token的有效期
      * @param request
      * @param response
      * @param handler
@@ -40,14 +40,14 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 1.获取请求头中的token
+        // 1.获取请求头中的 token
         String token = request.getHeader("authorization");
         if (StrUtil.isBlank(token)) {
             // 不存在也放行，由拦截器2进行拦截
             return true;
         }
 
-        // 2.基于TOKEN获取redis中的用户
+        // 2.基于 token 获取 redis 中的用户
         String key  = LOGIN_TOKEN_KEY + token;
         Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(key);
 
@@ -57,13 +57,13 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 5.将查询到的hash数据转为UserDTO
+        // 5.将查询到的 hash 数据转为 UserDTO
         UserDTO userDTO = BeanUtil.fillBeanWithMap(userMap, new UserDTO(), false);
 
         // 6.存在，保存用户信息到 ThreadLocal
         UserHolder.saveUser(userDTO);
 
-        // 7.刷新token有效期
+        // 7.刷新 token 有效期
         stringRedisTemplate.expire(key, LOGIN_TOKEN_TTL, TimeUnit.MINUTES);
 
         // 8.放行

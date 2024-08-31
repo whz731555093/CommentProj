@@ -38,26 +38,35 @@ class HmDianPingApplicationTests {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    /**
+     * 线程池 用于测试 多线程同时下单时 testIdWorker 返回的ID是否唯一
+     */
     private ExecutorService es = Executors.newFixedThreadPool(500);
 
     @Test
     void testIdWorker() throws InterruptedException {
+        // 创建一个计数器 300为线程数
         CountDownLatch latch = new CountDownLatch(300);
 
+        int threadCounter = 300;
+
         Runnable task = () -> {
-            for (int i = 0; i < 100; i++) {
+            int idCounter = 100;
+            for (int i = 0; i < idCounter; i++) {
                 long id = redisIdWorker.nextId("order");
                 System.out.println("id = " + id);
             }
+            // 任务每被执行一次 就计数一次
             latch.countDown();
         };
         long begin = System.currentTimeMillis();
-        for (int i = 0; i < 300; i++) {
+        for (int i = 0; i < threadCounter; i++) {
             es.submit(task);
         }
+        // 等待计数器计数完毕
         latch.await();
         long end = System.currentTimeMillis();
-        System.out.println("time = " + (end - begin));
+        System.out.println("time consuming = " + (end - begin));
     }
 
     @Test
