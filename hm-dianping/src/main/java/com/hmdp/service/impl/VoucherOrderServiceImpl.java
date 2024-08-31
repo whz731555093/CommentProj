@@ -3,6 +3,7 @@ package com.hmdp.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.Result;
+import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.mapper.VoucherOrderMapper;
 import com.hmdp.service.ISeckillVoucherService;
@@ -12,15 +13,18 @@ import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -242,10 +246,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
      * @param voucherId 优惠券ID
      * @return 订单ID
      */
-    /*
-    @Override
-    @Transactional
-    public Result seckillVoucher(Long voucherId) {
+    public Result seckillVoucherV1(Long voucherId) {
         // 1.查询优惠券
         SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
         // 2.判断秒杀是否开始
@@ -264,32 +265,17 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail("库存不足！");
         }
 
-        // 5.扣减库存
-        boolean success = seckillVoucherService.update()
-            .setSql("stock = stock - 1")    // 等价于 set stock = stock - 1
-            .eq("voucher_id", voucher_id)   // 等价于 where id = ?
-            .gt("stock", 0).update();  // 乐观锁 等价于 where stock > 0
-        if (!success) {
-            return Result.fail("库存不足！");
-        }
-
-        // 6.创建订单
-        VoucherOrder voucherOrder = new VoucherOrder();
-        // 6.1 订单id
-        Long orderId = redisIdWorker.nextId("order");
-        voucherOrder.setId(orderId);
-        // 6.2 用户id
+        // 由于设计到@Transactional注解，因此需要等事务提交了再释放锁，因此synchronized在函数外部使用
         Long userId = UserHolder.getUser().getId();
-        voucherOrder.setUserId(userId);
-        // 6.3 代金券id
-        voucherOrder.setVoucherId(voucherId);
-        // 6.4 插入订单数据
-        save(voucherOrder);
-
-        // 7 返回订单id
-        return Result.ok(orderId);
+        synchronized (userId.toString().intern()) {
+            // 此处等价于 this.createVoucherOrderByPessimisticLock，会导致事务失效
+            // 需要获取当前对象的代理对象，才能使得事务生效
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrderByPessimisticLock(voucherId);
+        }
     }
 
+    /*
     @Transactional
     public Result createVoucherOrder(Long voucherId) {
         // 5.一人一单
@@ -398,17 +384,20 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     }*/
 
-    /*@Transactional
-    public Result createVoucherOrder(Long voucherId) {
+    /**
+     * @description 下单优惠券 用悲观锁确保线程安全
+     */
+    @Transactional
+    public Result createVoucherOrderByPessimisticLock(Long voucherId) {
         // 5.一人一单
         Long userId = UserHolder.getUser().getId();
 
+        // toString低层还是会创建新的String对象，intern确保比较的是同一个字符串对象
         synchronized (userId.toString().intern()) {
             // 5.1.查询订单
             int count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
             // 5.2.判断是否存在
             if (count > 0) {
-                // 用户已经购买过了
                 return Result.fail("用户已经购买过一次！");
             }
 
@@ -436,5 +425,5 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             // 7.返回订单id
             return Result.ok(orderId);
         }
-    }*/
+    }
 }
